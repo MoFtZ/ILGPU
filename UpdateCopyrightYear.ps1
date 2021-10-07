@@ -11,10 +11,10 @@
 ## Source License. See LICENSE.txt for details.
 ## ---------------------------------------------------------------------------------------
 
-using namespace System;
-using namespace System.IO;
-using namespace System.Text;
-using namespace System.Text.RegularExpressions;
+using namespace System
+using namespace System.IO
+using namespace System.Text
+using namespace System.Text.RegularExpressions
 
 ##
 ## CopyrightInfo
