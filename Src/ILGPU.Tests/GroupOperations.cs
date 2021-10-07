@@ -1,6 +1,6 @@
 ﻿// ---------------------------------------------------------------------------------------
 //                                        ILGPU
-//                             Copyright (c)  ILGPU Project
+//                         Copyright (c) 0-2021 ILGPU Project
 //                                    www.ilgpu.net
 //
 // File: GroupOperations.cs
