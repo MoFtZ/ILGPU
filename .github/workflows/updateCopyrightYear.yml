@@ -1,0 +1,24 @@
+name: UpdateCopyrightYear
+
+on:
+  schedule:
+    - cron:  '*/5 * * * *'
+
+jobs:
+  update-copyright-year:
+    if: !github.event.repository.fork
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Update copyright year
+        uses: technote-space/create-pr-action@v2
+        with:
+          EXECUTE_COMMANDS: |
+            ./UpdateCopyrightYear.ps1
+          COMMIT_MESSAGE: 'Bump copyright year'
+          COMMIT_NAME: 'Marcel Koester'
+          COMMIT_EMAIL: 'm4rs@m4rs.net'
+          PR_BRANCH_NAME: 'update-copyright-year-${PR_ID}'
+          PR_TITLE: 'Bump copyright year'
