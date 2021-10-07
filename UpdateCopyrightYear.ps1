@@ -1,4 +1,6 @@
-﻿## ---------------------------------------------------------------------------------------
+﻿#! /usr/bin/pwsh
+
+## ---------------------------------------------------------------------------------------
 ##                                        ILGPU
 ##                           Copyright (c) 2021 ILGPU Project
 ##                                    www.ilgpu.net
@@ -265,7 +267,7 @@ class SourceCodeCopyrightProcessor : BaseCopyrightProcessor {
         $delim = [Regex]::Escape($this::LineDelimiter)
         $copyrightText = [Regex]::Escape($this::CopyrightText)
 
-        $pattern = "^(?<copyright>${prefix}.+${copyrightText}\s*(?<startingYear>[\d]*).+${prefix}[${delim}]+)(?<suffix>.*)"
+        $pattern = "^(?<prefix>.*)(?<copyright>${prefix}.+${copyrightText}\s*(?<startingYear>[\d]*).+${prefix}[${delim}]+)(?<suffix>.*)"
         return $this::ParseUsingRegex($file, $pattern)
     }
 
