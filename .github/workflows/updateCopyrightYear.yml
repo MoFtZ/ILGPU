@@ -6,7 +6,6 @@ on:
 
 jobs:
   update-copyright-year:
-    if: !github.event.repository.fork
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
