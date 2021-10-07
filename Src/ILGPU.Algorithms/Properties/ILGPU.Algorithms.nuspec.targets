@@ -1,4 +1,4 @@
-<Project>
+﻿Copyright (c)  ILGPU Project. All rights reserved.<Project>
   <PropertyGroup>
     <PackageId>ILGPU.Algorithms</PackageId>
     <PackageVersion>$(Version)</PackageVersion>
