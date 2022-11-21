@@ -331,6 +331,12 @@ namespace ILGPU.IR
             (first, second) => first.Id.CompareTo(second.Id);
 
         /// <summary>
+        /// The hidden intrinsic attribute used internally by the .NET runtime.
+        /// </summary>
+        internal static readonly Type CompilerServicesIntrinsicAttribute =
+            Type.GetType("System.Runtime.CompilerServices.IntrinsicAttribute");
+
+        /// <summary>
         /// Resolves <see cref="MethodFlags"/> that represents properties of the
         /// given method base.
         /// </summary>
@@ -348,6 +354,19 @@ namespace ILGPU.IR
             {
                 return MethodFlags.External;
             }
+
+#if NET7_0_OR_GREATER
+            // In net70, the IL implementation of the Unsafe.As function has changed -
+            // it now contains a throw statement. ILGPU will provide a replacement method
+            // body for the Unsafe class, by checking for the internal .NET intrinsic
+            // attribute.
+            if (typeof(Unsafe).Equals(methodBase.DeclaringType) &&
+                CompilerServicesIntrinsicAttribute != null &&
+                methodBase.IsDefined(CompilerServicesIntrinsicAttribute))
+            {
+                return MethodFlags.External | MethodFlags.Intrinsic;
+            }
+#endif
 
             // Check for custom intrinsic implementations
             if (methodBase.IsDefined(typeof(IntrinsicImplementationAttribute)))

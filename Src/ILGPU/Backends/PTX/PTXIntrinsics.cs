@@ -1,6 +1,6 @@
 ﻿// ---------------------------------------------------------------------------------------
 //                                        ILGPU
-//                        Copyright (c) 2019-2021 ILGPU Project
+//                        Copyright (c) 2019-2022 ILGPU Project
 //                                    www.ilgpu.net
 //
 // File: PTXIntrinsics.cs
@@ -10,10 +10,13 @@
 // ---------------------------------------------------------------------------------------
 
 using ILGPU.AtomicOperations;
+using ILGPU.IR;
 using ILGPU.IR.Intrinsics;
 using ILGPU.IR.Values;
 using ILGPU.Runtime.Cuda;
 using System;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace ILGPU.Backends.PTX
@@ -95,6 +98,9 @@ namespace ILGPU.Backends.PTX
             RegisterWarpShuffles(manager);
             RegisterFP16(manager);
             RegisterBitFunctions(manager);
+#if NET7_0_OR_GREATER
+            RegisterUnsafeFunctions(manager);
+#endif
         }
 
         #endregion
@@ -220,6 +226,84 @@ namespace ILGPU.Backends.PTX
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int TrailingZeroCountI64(long value) =>
             IntrinsicMath.BitOperations.TrailingZeroCount(value);
+
+        #endregion
+
+        #region Unsafe Functions
+
+#if NET7_0_OR_GREATER
+
+        /// <summary>
+        /// Registers all Unsafe intrinsics with the given manager.
+        /// </summary>
+        /// <param name="manager">The target implementation manager.</param>
+        private static void RegisterUnsafeFunctions(
+            IntrinsicImplementationManager manager)
+        {
+            // List of conversions, of equal size.
+            (Type From, Type To)[] combinations = new[]
+                {
+                    (typeof(double), typeof(long)),
+                    (typeof(double), typeof(ulong)),
+                    (typeof(long), typeof(ulong)),
+
+                    (typeof(float), typeof(int)),
+                    (typeof(float), typeof(uint)),
+                    (typeof(int), typeof(uint)),
+
+                    (typeof(Half), typeof(short)),
+                    (typeof(Half), typeof(ushort)),
+                    (typeof(short), typeof(ushort)),
+                };
+
+            // There are multiple declarations of the As method, so we have to find the
+            // generic method with two generic arguments.
+            var baseMethod = typeof(Unsafe)
+                .GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .Where(m =>
+                    nameof(Unsafe.As).Equals(
+                        m.Name,
+                        StringComparison.OrdinalIgnoreCase))
+                .Where(m => m.IsGenericMethod && m.GetGenericArguments().Length == 2)
+                .Single();
+
+            // Register the replacements for Unsafe.As methods.
+            void registerUnsafeMethod(MethodInfo method) =>
+                manager.RegisterMethod(
+                    method,
+                    new PTXIntrinsic(
+                        typeof(PTXIntrinsics),
+                        nameof(PTXIntrinsics.GenerateUnsafeAsIntrinsic),
+                        IntrinsicImplementationMode.GenerateCode));
+
+            foreach (var (fromType, toType) in combinations)
+            {
+                var method = baseMethod.MakeGenericMethod(new[] { fromType, toType });
+                registerUnsafeMethod(method);
+
+                var inverse = baseMethod.MakeGenericMethod(new[] { toType, fromType });
+                registerUnsafeMethod(inverse);
+            }
+        }
+
+        /// <summary>
+        /// Generates intrinsic implementation for Unsafe.As.
+        /// </summary>
+        /// <param name="backend">The current backend.</param>
+        /// <param name="codeGenerator">The code generator.</param>
+        /// <param name="value">The value to generate code for.</param>
+        private static void GenerateUnsafeAsIntrinsic(
+            PTXBackend backend,
+            PTXCodeGenerator codeGenerator,
+            Value value)
+        {
+            var methodCall = value as MethodCall;
+            var argument = methodCall.Nodes[0];
+            var sourceRegister = codeGenerator.LoadHardware(argument);
+            codeGenerator.Bind(value, sourceRegister);
+        }
+
+#endif
 
         #endregion
     }
