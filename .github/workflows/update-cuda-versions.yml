@@ -8,7 +8,7 @@ on:
 jobs:
   update-cuda-versions:
     # Only run on main repository
-    if: github.repository == 'm4rs-mt/ILGPU'
+    if: github.repository == 'MoFtZ/ILGPU'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
