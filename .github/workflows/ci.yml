@@ -99,7 +99,7 @@ jobs:
       - name: Setup OS matrix
         id: setup-os-matrix
         run: |
-          os=("ubuntu-22.04" "windows-latest")
+          os=("macos-13")
 
           # runs on macOS only if there is a push to master, or a tag is
           # pushed, we do this since macOS builds last too long and ILGPU
