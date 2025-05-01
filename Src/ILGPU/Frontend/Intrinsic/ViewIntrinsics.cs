@@ -26,6 +26,7 @@ namespace ILGPU.Frontend.Intrinsic
         GetSubView,
         GetSubViewImplicitLength,
         GetViewElementAddress,
+        GetViewAddress,
         CastView,
 
         IsValidView,
@@ -110,6 +111,11 @@ namespace ILGPU.Frontend.Intrinsic
                         ref context,
                         instanceValue,
                         context[paramOffset]),
+                ViewIntrinsicKind.GetViewAddress =>
+                    GetViewElementAddress(
+                        ref context,
+                        instanceValue,
+                        builder.CreatePrimitiveValue(location, 0L)),
                 ViewIntrinsicKind.CastView => builder.CreateViewCast(
                     location,
                     instanceValue,

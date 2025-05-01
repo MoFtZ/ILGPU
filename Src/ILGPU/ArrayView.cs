@@ -310,6 +310,15 @@ namespace ILGPU
         }
 
         /// <summary>
+        /// Returns the address of this array view.
+        /// </summary>
+        public readonly IntPtr Address
+        {
+            [ViewIntrinsic(ViewIntrinsicKind.GetViewAddress)]
+            get => LoadEffectiveAddressAsPtr();
+        }
+
+        /// <summary>
         /// Returns the length of this array view.
         /// </summary>
         public readonly int IntLength
