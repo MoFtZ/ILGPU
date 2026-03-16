@@ -408,6 +408,11 @@ namespace ILGPU.IR.Types
                     : 1;
             }
 
+            // If this compound type is a blittable value type, and no size has been
+            // explictly specified, use the default interop size.
+            if (type.IsValueType && isBlittable && size == 0)
+                size = Interop.SizeOf(type);
+
             return new TypeInformation(
                 this,
                 type,

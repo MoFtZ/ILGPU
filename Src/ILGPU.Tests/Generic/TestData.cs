@@ -608,6 +608,77 @@ namespace ILGPU.Tests
     }
 
     #endregion
+
+    #region ValueTuple structures
+
+    public struct SerializableValueTuple<T1, T2> : IXunitSerializable
+        where T1 : unmanaged
+        where T2 : unmanaged
+    {
+        public SerializableValueTuple() { }
+
+        public SerializableValueTuple((T1, T2) value)
+        {
+            Value = value;
+        }
+
+        public (T1, T2) Value { get; private set; }
+
+        public void Serialize(IXunitSerializationInfo info)
+        {
+            info.AddValue(nameof(Value.Item1), Value.Item1);
+            info.AddValue(nameof(Value.Item2), Value.Item2);
+        }
+
+        public void Deserialize(IXunitSerializationInfo info)
+        {
+            var item1 = info.GetValue<T1>(nameof(Value.Item1));
+            var item2 = info.GetValue<T2>(nameof(Value.Item2));
+            Value = (item1, item2);
+        }
+
+        public override int GetHashCode() =>
+            HashCode.Combine(Value);
+
+        public override string ToString() => $"{Value}";
+    }
+
+    public struct SerializableValueTuple<T1, T2, T3> : IXunitSerializable
+        where T1 : unmanaged
+        where T2 : unmanaged
+        where T3 : unmanaged
+    {
+        public SerializableValueTuple() { }
+
+        public SerializableValueTuple((T1, T2, T3) value)
+        {
+            Value = value;
+        }
+
+        public (T1, T2, T3) Value { get; private set; }
+
+        public void Serialize(IXunitSerializationInfo info)
+        {
+            info.AddValue(nameof(Value.Item1), Value.Item1);
+            info.AddValue(nameof(Value.Item2), Value.Item2);
+            info.AddValue(nameof(Value.Item3), Value.Item3);
+        }
+
+        public void Deserialize(IXunitSerializationInfo info)
+        {
+            var item1 = info.GetValue<T1>(nameof(Value.Item1));
+            var item2 = info.GetValue<T2>(nameof(Value.Item2));
+            var item3 = info.GetValue<T3>(nameof(Value.Item3));
+            Value = (item1, item2, item3);
+        }
+
+        public override int GetHashCode() =>
+            HashCode.Combine(Value);
+
+        public override string ToString() => $"{Value}";
+    }
+
+    #endregion
 }
 
 #pragma warning restore CA2231 // Overload operator equals on overriding value type Equals

@@ -13,6 +13,7 @@ using ILGPU.Runtime;
 using ILGPU.Util;
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Xunit;
 using Xunit.Abstractions;
@@ -95,6 +96,12 @@ namespace ILGPU.Tests
                 Val0 = new ShortFixedBufferStruct(short.MinValue),
                 Val1 = ushort.MaxValue,
                 Val2 = new LongFixedBufferStruct(long.MinValue),
+            } },
+            { new TestStruct<SerializableValueTuple<int, int, int>, SerializableValueTuple<short, short>>()
+            {
+                Val0 = new SerializableValueTuple<int, int, int>((1, 2, 3)),
+                Val1 = ushort.MaxValue,
+                Val2 = new SerializableValueTuple<short, short>((4, 5)),
             } },
         };
 
@@ -473,6 +480,50 @@ namespace ILGPU.Tests
         {
             var a = new FieldStruct { Cursor = 42 };
             output[index] = a.Cursor;
+        }
+
+        // Total structure size is 24 bytes (12D + 4P + 4D + 4P).
+        public struct PaddedValueTuple
+        {
+            // 12 data bytes + 4 padding bytes
+            public (int, int, int) ABC;
+
+            // 4 data bytes
+            public int D;
+
+            // 4 padding bytes.
+        }
+
+        internal static void PaddedValueTupleKernel(
+            Index1D index,
+            ArrayView1D<PaddedValueTuple, Stride1D.Dense> input,
+            ArrayView1D<PaddedValueTuple, Stride1D.Dense> output)
+        {
+            output[index].ABC.Item1 = input[index].ABC.Item1;
+            output[index].ABC.Item2 = input[index].ABC.Item2;
+            output[index].ABC.Item3 = input[index].ABC.Item3;
+            output[index].D = input[index].D;
+        }
+
+        [Fact]
+        [KernelMethod(nameof(PaddedValueTupleKernel))]
+        public void StructurePaddedValueTuple()
+        {
+            var Length = 128;
+            var next = 0;
+            var expected =
+                Enumerable.Range(1, Length)
+                .Select(n => new PaddedValueTuple
+                {
+                    ABC = (next++, next++, next++),
+                    D = next++
+                })
+                .ToArray();
+            using var input = Accelerator.Allocate1D(expected);
+            using var output = Accelerator.Allocate1D<PaddedValueTuple>(Length);
+            output.MemSetToZero();
+            Execute(Length, input.View, output.View);
+            Verify(output.View, expected);
         }
 
         [Fact]
