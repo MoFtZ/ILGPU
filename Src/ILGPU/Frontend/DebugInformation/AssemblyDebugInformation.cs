@@ -1,6 +1,6 @@
 ﻿// ---------------------------------------------------------------------------------------
 //                                        ILGPU
-//                        Copyright (c) 2018-2023 ILGPU Project
+//                        Copyright (c) 2018-2026 ILGPU Project
 //                                    www.ilgpu.net
 //
 // File: AssemblyDebugInformation.cs
@@ -26,6 +26,85 @@ namespace ILGPU.Frontend.DebugInformation
     /// </summary>
     public sealed class AssemblyDebugInformation : IMetadataReaderOperationProvider
     {
+        #region Static
+
+        /// <summary>
+        /// A minimal PDB file without any metadata, following ECMA-335 spec.
+        /// </summary>
+        private static readonly ImmutableArray<byte> EmptyPdb =
+            ImmutableArray.Create<byte>(
+            [
+                // Metadata root – BSJB signature
+                0x42, 0x53, 0x4A, 0x42,
+                // MajorVersion, MinorVersion
+                0x01, 0x00, 0x01, 0x00,
+                // Reserved
+                0x00, 0x00, 0x00, 0x00,
+                // VersionLength = 12 (padded)
+                0x0C, 0x00, 0x00, 0x00,
+                // Version string "v4.0.30319\0" + 1 pad byte
+                0x76, 0x34, 0x2E, 0x30, 0x2E, 0x33, 0x30, 0x33, 0x31, 0x39, 0x00, 0x00,
+                // Flags, NumberOfStreams = 5
+                0x00, 0x00, 0x05, 0x00,
+
+                // Stream header: #~  (offset=0x6C, size=0x26)
+                0x6C, 0x00, 0x00, 0x00,
+                0x26, 0x00, 0x00, 0x00,
+                0x23, 0x7E, 0x00, 0x00, // "#~\0\0"
+
+                // Stream header: #Strings  (offset=0x92, size=0x01)
+                0x92, 0x00, 0x00, 0x00,
+                0x01, 0x00, 0x00, 0x00,
+                0x23, 0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x73, // "#Strings"
+                0x00, 0x00, 0x00, 0x00,                         // \0 + 3 pad
+
+                // Stream header: #US  (offset=0x93, size=0x01)
+                0x93, 0x00, 0x00, 0x00,
+                0x01, 0x00, 0x00, 0x00,
+                0x23, 0x55, 0x53, 0x00, // "#US\0"
+
+                // Stream header: #Blob  (offset=0x94, size=0x01)
+                0x94, 0x00, 0x00, 0x00,
+                0x01, 0x00, 0x00, 0x00,
+                0x23, 0x42, 0x6C, 0x6F, 0x62, 0x00, 0x00, 0x00, // "#Blob\0\0\0"
+
+                // Stream header: #GUID  (offset=0x95, size=0x10)
+                0x95, 0x00, 0x00, 0x00,
+                0x10, 0x00, 0x00, 0x00,
+                0x23, 0x47, 0x55, 0x49, 0x44, 0x00, 0x00, 0x00, // "#GUID\0\0\0"
+
+                // #~ stream
+                0x00, 0x00, 0x00, 0x00, // Reserved
+                0x02, 0x00, 0x00, 0x01, // MajorVersion, MinorVersion, HeapSizes, Reserved
+                // Valid: only Module table (bit 0 set)
+                0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                // Sorted (standard mask)
+                0x01, 0x33, 0x00, 0x16, 0x00, 0x00, 0x00, 0x00,
+                // RowCount[0] = 1  (Module table has 1 row)
+                0x01, 0x00, 0x00, 0x00,
+                // Module table row
+                0x00, 0x00, // Generation = 0
+                0x00, 0x00, // Name       -> #Strings[0] = ""
+                0x01, 0x00, // Mvid       -> #GUID[1]
+                0x00, 0x00, // EncId      = 0
+                0x00, 0x00, // EncBaseId  = 0
+
+                // #Strings heap
+                0x00,
+
+                // #US heap
+                0x00,
+
+                // #Blob heap
+                0x00,
+
+                // #GUID heap – module version ID (MVID)
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            ]);
+
+        #endregion
+
         #region Instance
 
         /// <summary>
@@ -54,8 +133,7 @@ namespace ILGPU.Frontend.DebugInformation
             Assembly = assembly;
             Modules = ImmutableArray<Module>.Empty;
 
-            readerProvider =
-                MetadataReaderProvider.FromPortablePdbImage(ImmutableArray<byte>.Empty);
+            readerProvider = MetadataReaderProvider.FromPortablePdbImage(EmptyPdb);
             MetadataReader = readerProvider.GetMetadataReader();
         }
 
